@@ -1,0 +1,60 @@
+// Prisma schema para o Sentinel API
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Monitor {
+  id                  String     @id @default(uuid())
+  name                String
+  url                 String
+  isActive            Boolean    @default(true)
+  consecutiveFailures Int        @default(0)
+  discordWebhook      String?
+  createdAt           DateTime   @default(now())
+  updatedAt           DateTime   @updatedAt
+
+  pingLogs            PingLog[]
+  incidents           Incident[]
+
+  @@map("monitors")
+}
+
+model PingLog {
+  id           String   @id @default(uuid())
+  monitorId    String
+  statusCode   Int?
+  latencyMs    Float
+  isUp         Boolean
+  errorMessage String?
+  checkedAt    DateTime @default(now())
+
+  monitor      Monitor  @relation(fields: [monitorId], references: [id], onDelete: Cascade)
+
+  @@index([monitorId, checkedAt])
+  @@map("ping_logs")
+}
+
+model Incident {
+  id          String         @id @default(uuid())
+  monitorId   String
+  status      IncidentStatus @default(OPEN)
+  aiDiagnosis String?
+  startedAt   DateTime       @default(now())
+  resolvedAt  DateTime?
+
+  monitor     Monitor        @relation(fields: [monitorId], references: [id], onDelete: Cascade)
+
+  @@index([monitorId])
+  @@map("incidents")
+}
+
+enum IncidentStatus {
+  OPEN
+  RESOLVED
+}
