@@ -1,0 +1,32 @@
+name: AI Senior Code Review
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  senior-review:
+    runs-on: ubuntu-latest
+    # Evita rodar em PRs ainda marcados como rascunho (Draft)
+    if: github.event.pull_request.draft == false
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@v4
+
+      - name: Executar Revisão com Gemini Sênior
+        uses: AleksandrFurmenkovOfficial/ai-code-review@v1.0
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          owner: ${{ github.repository_owner }}
+          repo: ${{ github.event.repository.name }}
+          pr_number: ${{ github.event.pull_request.number }}
+          ai_provider: 'google'
+          google_api_key: ${{ secrets.GEMINI_API_KEY }}
+          google_model: 'gemini-3-pro-preview'
+          review_rules_file: '.github/review-rules.md'
+          exclude_paths: 'node_modules/,dist/,build/,coverage/,.git/'
+          exclude_extensions: '.lock,.json,.png,.jpg,.svg,.md'
